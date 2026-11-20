@@ -1,18 +1,33 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import TaskItem from './TaskItem.vue'
 
-const tasks = ref([
-  { id: 1, title: 'Einkaufen', done: false },
-  { id: 2, title: 'WebTech M1 abgeben', done: true },
-  { id: 3, title: 'WebTech M2 abgeben', done: false }
-])
+const tasks = ref([])
+const loading = ref(true)
+const error = ref(null)
+
+onMounted(async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tasks`)
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    tasks.value = await response.json()
+  } catch (e) {
+    error.value = 'Die Aufgaben konnten nicht geladen werden.'
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
   <h2>Meine Aufgaben</h2>
-  <ul>
-    <li v-for="task in tasks" :key="task.id">
-      {{ task.title }} – {{ task.done ? 'erledigt' : 'offen' }}
-    </li>
+
+  <p v-if="loading">Lade Aufgaben … (beim ersten Aufruf kann das bis zu einer Minute dauern)</p>
+  <p v-else-if="error">{{ error }}</p>
+
+  <ul v-else>
+    <TaskItem v-for="task in tasks" :key="task.id" :task="task" />
   </ul>
 </template>
